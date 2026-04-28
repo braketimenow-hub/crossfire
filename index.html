@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CROSSFIRE v2 — EMA · BB · VWAP · VWSC</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Bebas+Neue&display=swap');
+  :root {
+    --bg:#09090f;--surface:#0f1018;--panel:#13141f;--border:#1e2035;
+    --accent:#00f5c4;--accent2:#ff6b35;--accent3:#7c6af7;
+    --bull:#00e676;--bear:#ff1744;--warn:#ffd600;
+    --text:#e8eaf0;--muted:#5c6080;
+    --ema9:#00f5c4;--ema19:#ff6b35;--bb:#7c6af7;--vwap:#ffd600;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;}
+  .wrap{display:flex;flex-direction:column;height:100vh;}
+
+  .header{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:3px;color:var(--accent);}
+  .logo span{color:var(--muted);font-size:9px;font-family:'JetBrains Mono';letter-spacing:1px;margin-left:6px;}
+  .controls{display:flex;align-items:center;gap:6px;}
+  input[type="text"]{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 8px;border-radius:3px;outline:none;}
+  input[type="text"]:focus{border-color:var(--accent);}
+  input[type="password"]{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 8px;border-radius:3px;outline:none;width:100%;}
+  input[type="password"]:focus{border-color:var(--accent);}
+  #tickerInput{width:75px;text-transform:uppercase;}
+  select{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 6px;border-radius:3px;outline:none;}
+  button{background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;padding:4px 10px;border-radius:3px;cursor:pointer;letter-spacing:1px;}
+  button:hover{opacity:.85;}
+  button.sec{background:var(--panel);color:var(--text);border:1px solid var(--border);font-weight:400;}
+  button.sec:hover{border-color:var(--accent);color:var(--accent);}
+
+  .body{display:flex;flex:1;min-height:0;overflow:hidden;}
+
+  .chart-col{display:flex;flex-direction:column;flex:1;min-width:0;padding:8px 10px 6px;gap:4px;overflow:hidden;}
+  .ticker-row{display:flex;align-items:baseline;gap:10px;flex-shrink:0;}
+  .t-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;}
+  .t-price{font-size:16px;font-weight:700;}
+  .t-chg{font-size:10px;color:var(--muted);}
+  .legend{display:flex;gap:10px;font-size:8px;color:var(--muted);flex-shrink:0;}
+  .li{display:flex;align-items:center;gap:3px;}
+  .ld{width:14px;height:2px;border-radius:2px;}
+  canvas{display:block;border-radius:3px;border:1px solid var(--border);background:var(--panel);}
+  #mainChart{flex:1;min-height:0;width:100%;}
+  #volChart{height:44px;width:100%;flex-shrink:0;}
+
+  .sidebar{width:250px;flex-shrink:0;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+  .sidebar::-webkit-scrollbar{width:3px;}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+
+  .api-panel{padding:10px 12px;border-bottom:2px solid var(--accent);background:rgba(0,245,196,.06);flex-shrink:0;}
+  .api-label{font-size:8px;letter-spacing:2px;color:var(--accent);margin-bottom:6px;text-transform:uppercase;font-weight:700;}
+  .api-input-row{display:flex;gap:6px;align-items:center;}
+  .api-save-btn{background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;padding:5px 10px;border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+  .api-save-btn:hover{opacity:.85;}
+  .api-status{font-size:8px;margin-top:5px;padding:3px 6px;border-radius:2px;background:rgba(92,96,128,.15);}
+
+  .sig-banner{padding:8px 12px;border-bottom:1px solid var(--border);background:var(--panel);}
+  .sig-title{font-size:7px;letter-spacing:2px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;}
+  .sig-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:1px;}
+  .sig-badge.bullish{background:rgba(0,230,118,.15);color:var(--bull);border:1px solid rgba(0,230,118,.3);}
+  .sig-badge.bearish{background:rgba(255,23,68,.15);color:var(--bear);border:1px solid rgba(255,23,68,.3);}
+  .sig-badge.neutral{background:rgba(255,214,0,.1);color:var(--warn);border:1px solid rgba(255,214,0,.25);}
+  .sig-badge.none{background:rgba(92,96,128,.2);color:var(--muted);border:1px solid var(--border);}
+  .sig-dot{width:5px;height:5px;border-radius:50%;animation:pulse 1.5s infinite;}
+  .bullish .sig-dot{background:var(--bull);}
+  .bearish .sig-dot{background:var(--bear);}
+  .neutral .sig-dot{background:var(--warn);}
+  .none .sig-dot{background:var(--muted);animation:none;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
+
+  .vwsc-block{padding:8px 12px;border-bottom:1px solid var(--border);}
+  .sec-title{font-size:7px;letter-spacing:2px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;}
+  .score-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .score-num{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;}
+  .score-sub{font-size:7px;color:var(--muted);letter-spacing:1px;}
+  .vwsc-bars{display:flex;flex-direction:column;gap:3px;flex:1;}
+  .vb-row{display:flex;align-items:center;gap:4px;font-size:8px;}
+  .vb-label{color:var(--muted);width:68px;flex-shrink:0;}
+  .vb-track{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .vb-fill{height:100%;border-radius:2px;transition:width .4s;}
+  .vb-val{width:20px;text-align:right;font-weight:500;font-size:8px;}
+  .verdict{font-size:8px;margin-top:3px;}
+
+  .metrics{padding:6px 12px;border-bottom:1px solid var(--border);}
+  .mr{display:flex;justify-content:space-between;font-size:9px;padding:1px 0;}
+  .ml{color:var(--muted);}
+  .mv{font-weight:500;}
+  .mv.bull{color:var(--bull);}
+  .mv.bear{color:var(--bear);}
+  .mv.warn{color:var(--warn);}
+
+  .vwap-room{padding:6px 12px;border-bottom:1px solid var(--border);}
+  .vr-track{background:var(--border);border-radius:2px;height:4px;margin:4px 0 2px;overflow:hidden;}
+  .vr-fill{height:100%;border-radius:2px;transition:width .4s;}
+  .vr-labels{display:flex;justify-content:space-between;font-size:7px;color:var(--muted);}
+
+  .sh{padding:5px 12px 2px;font-size:7px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+  .cx-log{padding:0 12px 6px;}
+  .log-entry{padding:4px 0;border-bottom:1px solid var(--border);font-size:8px;display:flex;justify-content:space-between;align-items:center;}
+  .log-entry:last-child{border-bottom:none;}
+  .log-type{font-weight:700;}
+  .log-info{color:var(--muted);text-align:right;line-height:1.4;}
+
+  .status{padding:4px 12px;background:var(--bg);border-top:1px solid var(--border);font-size:7px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:.5px;flex-shrink:0;}
+  .live-dot{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--bull);animation:pulse 1s infinite;margin-right:3px;vertical-align:middle;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="logo">CROSSFIRE <span>EMA · BB · VWAP · VWSC · LIVE</span></div>
+    <div class="controls">
+      <input type="text" id="tickerInput" placeholder="TICKER" value="AAPL" maxlength="6"/>
+      <select id="intervalSelect">
+        <option value="5min">5M</option>
+        <option value="15min" selected>15M</option>
+        <option value="30min">30M</option>
+        <option value="60min">1H</option>
+      </select>
+      <button onclick="fetchLive()">&#9654; LIVE</button>
+      <button class="sec" onclick="runDemo()">DEMO</button>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="chart-col">
+      <div class="ticker-row">
+        <div class="t-name" id="dTicker">—</div>
+        <div class="t-price" id="dPrice">—</div>
+        <div class="t-chg" id="dChg">—</div>
+      </div>
+      <div class="legend">
+        <div class="li"><div class="ld" style="background:#e8eaf0"></div>PRICE</div>
+        <div class="li"><div class="ld" style="background:var(--ema9)"></div>EMA9</div>
+        <div class="li"><div class="ld" style="background:var(--ema19)"></div>EMA19</div>
+        <div class="li"><div class="ld" style="background:var(--bb)"></div>BB</div>
+        <div class="li"><div class="ld" style="background:var(--vwap)"></div>VWAP&#177;2&#963;</div>
+      </div>
+      <canvas id="mainChart"></canvas>
+      <canvas id="volChart"></canvas>
+    </div>
+
+    <div class="sidebar">
+      <div class="api-panel">
+        <div class="api-label">&#128273; Alpha Vantage API Key</div>
+        <div class="api-input-row">
+          <input type="password" id="apiKeyInput" placeholder="Paste your key here…"/>
+          <button class="api-save-btn" onclick="saveKey()">SAVE</button>
+        </div>
+        <div class="api-status" id="apiStatus" style="color:var(--muted)">No key saved · running demo data</div>
+      </div>
+
+      <div class="sig-banner">
+        <div class="sig-title">CROSSOVER SIGNAL</div>
+        <div class="sig-badge none" id="sigBadge"><div class="sig-dot"></div><span id="sigText">AWAITING DATA</span></div>
+        <div style="margin-top:4px;font-size:8px;color:var(--muted)" id="sigDetail">Paste key above, enter ticker, hit &#9654; LIVE</div>
+      </div>
+
+      <div class="vwsc-block">
+        <div class="sec-title">VOL-WEIGHTED SIGNAL SCORE</div>
+        <div class="score-row">
+          <div><div class="score-num" id="vwscNum" style="color:var(--muted)">—</div><div class="score-sub">/100</div></div>
+          <div class="vwsc-bars">
+            <div class="vb-row"><span class="vb-label">EMA Momentum</span><div class="vb-track"><div class="vb-fill" id="vb1" style="width:0%;background:var(--ema9)"></div></div><span class="vb-val" id="vv1" style="color:var(--ema9)">—</span></div>
+            <div class="vb-row"><span class="vb-label">Vol Confirm</span><div class="vb-track"><div class="vb-fill" id="vb2" style="width:0%;background:var(--ema19)"></div></div><span class="vb-val" id="vv2" style="color:var(--ema19)">—</span></div>
+            <div class="vb-row"><span class="vb-label">BB Position</span><div class="vb-track"><div class="vb-fill" id="vb3" style="width:0%;background:var(--bb)"></div></div><span class="vb-val" id="vv3" style="color:var(--bb)">—</span></div>
+            <div class="vb-row"><span class="vb-label">VWAP Room</span><div class="vb-track"><div class="vb-fill" id="vb4" style="width:0%;background:var(--vwap)"></div></div><span class="vb-val" id="vv4" style="color:var(--vwap)">—</span></div>
+          </div>
+        </div>
+        <div class="verdict" id="vwscVerdict" style="color:var(--muted)">Score 70+ with active cross = high-confidence entry</div>
+      </div>
+
+      <div class="metrics">
+        <div class="mr"><span class="ml">EMA 9</span><span class="mv" id="e9v">—</span></div>
+        <div class="mr"><span class="ml">EMA 19</span><span class="mv" id="e19v">—</span></div>
+        <div class="mr"><span class="ml">Spread</span><span class="mv" id="espread">—</span></div>
+        <div class="mr"><span class="ml">BB Upper</span><span class="mv" id="bbU">—</span></div>
+        <div class="mr"><span class="ml">BB Lower</span><span class="mv" id="bbL">—</span></div>
+        <div class="mr"><span class="ml">VWAP</span><span class="mv" id="vwapV">—</span></div>
+        <div class="mr"><span class="ml">VWAP +2&#963;</span><span class="mv" id="vwapUp">—</span></div>
+        <div class="mr"><span class="ml">VWAP -2&#963;</span><span class="mv" id="vwapDn">—</span></div>
+        <div class="mr"><span class="ml">Vol / MA</span><span class="mv" id="volRatioDisp">—</span></div>
+      </div>
+
+      <div class="sh">VWAP BAND POSITION</div>
+      <div class="vwap-room">
+        <div class="mr" style="margin-bottom:1px"><span class="ml" style="font-size:8px">Room to &#177;2&#963;</span><span class="mv" id="vwapRoomPct" style="font-size:8px">—</span></div>
+        <div class="vr-track"><div class="vr-fill" id="vwapBar" style="width:50%;background:var(--accent)"></div></div>
+        <div class="vr-labels"><span>-2&#963;</span><span id="vwapBarLbl">—</span><span>+2&#963;</span></div>
+        <div style="font-size:8px;color:var(--muted);margin-top:3px" id="vwapNote">—</div>
+      </div>
+
+      <div class="sh">CROSSOVER LOG</div>
+      <div class="cx-log" id="cxLog"><div style="color:var(--muted);font-size:8px;padding-top:4px">No data yet.</div></div>
+
+      <div class="status">
+        <span id="statusL">READY</span>
+        <span id="statusR">CROSSFIRE v2 · Watchman Ink</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let apiKey='', liveInterval=null, demoTick=null, currentData=null;
+
+function saveKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  if(!k){
+    document.getElementById('apiStatus').textContent='Please paste your key first';
+    document.getElementById('apiStatus').style.color='var(--warn)';
+    return;
+  }
+  apiKey=k;
+  document.getElementById('apiKeyInput').value='';
+  document.getElementById('apiKeyInput').placeholder='Key saved \u2713';
+  document.getElementById('apiStatus').textContent='\u2713 Key saved \u2014 type ticker & hit \u25BA LIVE';
+  document.getElementById('apiStatus').style.color='var(--bull)';
+}
+
+async function fetchLive(){
+  const ticker=document.getElementById('tickerInput').value.trim().toUpperCase();
+  if(!ticker)return;
+  if(!apiKey){
+    document.getElementById('apiStatus').textContent='\u26a0 Paste your Alpha Vantage key first, then hit SAVE';
+    document.getElementById('apiStatus').style.color='var(--warn)';
+    document.getElementById('apiKeyInput').focus();
+    runDemo(ticker); return;
+  }
+  const interval=document.getElementById('intervalSelect').value;
+  document.getElementById('statusL').textContent='FETCHING...';
+  document.getElementById('dPrice').textContent='...';
+  clearInterval(demoTick);
+  try{
+    const url=`https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=${interval}&outputsize=compact&apikey=${apiKey}`;
+    const res=await fetch(url);
+    const json=await res.json();
+    const key=`Time Series (${interval})`;
+    if(!json[key]){
+      const msg=(json['Note']||json['Information']||json['Error Message']||'API error').slice(0,60);
+      document.getElementById('apiStatus').textContent='\u2717 '+msg;
+      document.getElementById('apiStatus').style.color='var(--bear)';
+      runDemo(ticker); return;
+    }
+    const raw=json[key];
+    const times=Object.keys(raw).sort();
+    const prices=times.map(t=>parseFloat(raw[t]['4. close']));
+    const volumes=times.map(t=>parseInt(raw[t]['5. volume']));
+    const timestamps=times.map(t=>new Date(t));
+    currentData={ticker,prices,volumes,timestamps};
+    document.getElementById('dTicker').textContent=ticker;
+    document.getElementById('statusL').textContent=`LIVE \u00b7 ${prices.length} BARS \u00b7 ${interval.toUpperCase()}`;
+    document.getElementById('statusR').innerHTML='<span class="live-dot"></span>LIVE';
+    document.getElementById('apiStatus').textContent=`\u2713 ${prices.length} bars loaded \u00b7 ${new Date().toLocaleTimeString()}`;
+    document.getElementById('apiStatus').style.color='var(--bull)';
+    renderAll(currentData);
+    clearInterval(liveInterval);
+    liveInterval=setInterval(()=>fetchLive(),60000);
+  }catch(e){
+    document.getElementById('apiStatus').textContent='\u2717 Network error \u2014 using demo';
+    document.getElementById('apiStatus').style.color='var(--bear)';
+    runDemo(ticker);
+  }
+}
+
+function runDemo(ticker){
+  clearInterval(liveInterval); clearInterval(demoTick);
+  const t=(ticker||document.getElementById('tickerInput').value.trim().toUpperCase()||'DEMO').toUpperCase();
+  const n=80, start=150+Math.random()*80;
+  const prices=[start];
+  for(let i=1;i<n;i++) prices.push(Math.max(1,prices[i-1]+(Math.random()-.47)*start*.009));
+  const volumes=Array.from({length:n},(_,i)=>Math.floor(200000+Math.random()*800000+(i%5===0?500000:0)));
+  const timestamps=Array.from({length:n},(_,i)=>new Date(Date.now()-(n-i)*15*60000));
+  currentData={ticker:t,prices,volumes,timestamps};
+  document.getElementById('dTicker').textContent=t;
+  document.getElementById('statusL').textContent=`DEMO \u00b7 ${n} BARS`;
+  document.getElementById('statusR').textContent='DEMO MODE';
+  renderAll(currentData);
+  demoTick=setInterval(()=>{
+    if(!currentData)return;
+    const arr=currentData.prices;
+    arr[arr.length-1]=Math.max(1,arr[arr.length-1]+(Math.random()-.48)*.3);
+    currentData.volumes[currentData.volumes.length-1]+=Math.floor(Math.random()*3000);
+    renderAll(currentData);
+  },2000);
+}
+
+function calcEMA(prices,p){
+  const k=2/(p+1),out=Array(p-1).fill(null);
+  let prev=prices.slice(0,p).reduce((a,b)=>a+b,0)/p;
+  out.push(prev);
+  for(let i=p;i<prices.length;i++){prev=prices[i]*k+prev*(1-k);out.push(prev);}
+  return out;
+}
+function calcBB(prices,p=20,m=2){
+  const up=[],lo=[],mid=[];
+  for(let i=0;i<prices.length;i++){
+    if(i<p-1){up.push(null);lo.push(null);mid.push(null);continue;}
+    const sl=prices.slice(i-p+1,i+1),mean=sl.reduce((a,b)=>a+b,0)/p;
+    const std=Math.sqrt(sl.reduce((a,b)=>a+(b-mean)**2,0)/p);
+    mid.push(mean);up.push(mean+m*std);lo.push(mean-m*std);
+  }
+  return{up,lo,mid};
+}
+function calcVWAP(prices,vols){
+  let cpv=0,cv=0;
+  const vs=[],up=[],lo=[],devs=[];
+  for(let i=0;i<prices.length;i++){
+    cpv+=prices[i]*vols[i];cv+=vols[i];
+    const v=cpv/cv;vs.push(v);
+    devs.push((prices[i]-v)**2);
+    const std=Math.sqrt(devs.reduce((a,b)=>a+b,0)/devs.length);
+    up.push(v+2*std);lo.push(v-2*std);
+  }
+  return{vs,up,lo};
+}
+function calcVolMA(vols,p=20){return vols.map((_,i)=>i<p-1?null:vols.slice(i-p+1,i+1).reduce((a,b)=>a+b,0)/p);}
+function detectCrosses(e9,e19){
+  const out=[];
+  for(let i=1;i<e9.length;i++){
+    if(!e9[i]||!e19[i]||!e9[i-1]||!e19[i-1])continue;
+    const p=e9[i-1]-e19[i-1],c=e9[i]-e19[i];
+    if(p<=0&&c>0)out.push({idx:i,type:'BULLISH'});
+    else if(p>=0&&c<0)out.push({idx:i,type:'BEARISH'});
+  }
+  return out;
+}
+function calcVWSC(prices,vols,vma,e9,e19,bb,vw){
+  const n=prices.length-1,last=prices[n];
+  const sp=Math.abs((e9[n]||last)-(e19[n]||last))/last*100;
+  const emaMom=Math.min(25,sp/0.5*25);
+  const vRat=(vols[n])/(vma[n]||vols[n]);
+  const volScore=Math.min(35,Math.max(0,(vRat-1)*35));
+  const bbR=(bb.up[n]||last)-(bb.lo[n]||last);
+  const bbPos=bbR>0?(last-(bb.lo[n]||last))/bbR:0.5;
+  const bbScore=(1-Math.abs(bbPos-0.5)*2)*20;
+  const vR=vw.up[n]-vw.lo[n];
+  const vPos=vR>0?(last-vw.lo[n])/vR:0.5;
+  const vwapScore=(1-Math.abs(vPos-0.5)*2)*20;
+  const total=Math.min(100,Math.max(0,Math.round(emaMom+volScore+bbScore+vwapScore)));
+  return{total,emaMom:Math.round(emaMom),volScore:Math.round(volScore),bbScore:Math.round(bbScore),vwapScore:Math.round(vwapScore),vRat};
+}
+
+function renderAll(data){
+  const{prices,volumes,timestamps}=data;
+  const n=prices.length;
+  const E9=calcEMA(prices,9),E19=calcEMA(prices,19);
+  const BB=calcBB(prices),VW=calcVWAP(prices,volumes),VMA=calcVolMA(volumes);
+  const CX=detectCrosses(E9,E19);
+  const SC=calcVWSC(prices,volumes,VMA,E9,E19,BB,VW);
+
+  const last=prices[n-1],prev=prices[n-2]||last,chg=last-prev;
+  document.getElementById('dPrice').textContent='$'+last.toFixed(2);
+  document.getElementById('dPrice').style.color=chg>=0?'var(--bull)':'var(--bear)';
+  document.getElementById('dChg').textContent=`${chg>=0?'+':''}${chg.toFixed(2)} (${(chg/prev*100).toFixed(2)}%)`;
+
+  const e9=E9[n-1]||0,e19=E19[n-1]||0,sp=e9-e19;
+  document.getElementById('e9v').textContent='$'+e9.toFixed(2);
+  document.getElementById('e9v').className='mv '+(sp>0?'bull':'bear');
+  document.getElementById('e19v').textContent='$'+e19.toFixed(2);
+  document.getElementById('espread').textContent=(sp>=0?'+':'')+sp.toFixed(3);
+  document.getElementById('espread').className='mv '+(sp>0?'bull':'bear');
+  document.getElementById('bbU').textContent=BB.up[n-1]?'$'+BB.up[n-1].toFixed(2):'—';
+  document.getElementById('bbL').textContent=BB.lo[n-1]?'$'+BB.lo[n-1].toFixed(2):'—';
+  document.getElementById('vwapV').textContent='$'+VW.vs[n-1].toFixed(2);
+  document.getElementById('vwapUp').textContent='$'+VW.up[n-1].toFixed(2);
+  document.getElementById('vwapDn').textContent='$'+VW.lo[n-1].toFixed(2);
+  document.getElementById('volRatioDisp').textContent=SC.vRat.toFixed(2)+'x';
+  document.getElementById('volRatioDisp').className='mv '+(SC.vRat>1.5?'bull':SC.vRat<0.8?'bear':'');
+
+  const vU=VW.up[n-1],vD=VW.lo[n-1],vR=vU-vD,pos=vR>0?(last-vD)/vR:0.5;
+  const near=pos>0.82||pos<0.18;
+  const dU=vU-last,dD=last-vD;
+  document.getElementById('vwapRoomPct').textContent=(Math.min(dU,dD)/last*100).toFixed(2)+'% room';
+  document.getElementById('vwapRoomPct').className='mv '+(near?'warn':'bull');
+  const bar=document.getElementById('vwapBar');
+  bar.style.width=Math.round(pos*100)+'%';
+  bar.style.background=near?'var(--warn)':'var(--accent)';
+  document.getElementById('vwapBarLbl').textContent=near?'\u26a0 TIGHT':'ROOM OK';
+  document.getElementById('vwapNote').textContent=`$${dU.toFixed(2)} to +2\u03c3 \u00b7 $${dD.toFixed(2)} to -2\u03c3`;
+
+  const lx=CX.length>0?CX[CX.length-1]:null,age=lx?(n-1-lx.idx):999;
+  const badge=document.getElementById('sigBadge');
+  if(lx&&age<=5){
+    const bull=lx.type==='BULLISH';
+    badge.className='sig-badge '+(bull?'bullish':'bearish');
+    document.getElementById('sigText').textContent=bull?'\u25b2 BULLISH CROSS':'\u25bc BEARISH CROSS';
+    document.getElementById('sigDetail').textContent=`${age}b ago \u00b7 Score:${SC.total} \u00b7 ${!near?'VWAP \u2713':'TIGHT \u26a0'}`;
+    document.getElementById('sigDetail').style.color=SC.total>=70&&!near?'var(--bull)':SC.total>=50?'var(--warn)':'var(--bear)';
+  }else if(lx){
+    badge.className='sig-badge neutral';
+    document.getElementById('sigText').textContent='~ CROSS AGED';
+    document.getElementById('sigDetail').textContent=`${age} bars ago \u00b7 Score:${SC.total}`;
+    document.getElementById('sigDetail').style.color='var(--muted)';
+  }else{
+    badge.className='sig-badge none';
+    document.getElementById('sigText').textContent='NO CROSS YET';
+    document.getElementById('sigDetail').textContent='Watching EMA 9/19 for crossover';
+    document.getElementById('sigDetail').style.color='var(--muted)';
+  }
+
+  const scColor=SC.total>=70?'var(--bull)':SC.total>=50?'var(--warn)':'var(--bear)';
+  document.getElementById('vwscNum').textContent=SC.total;
+  document.getElementById('vwscNum').style.color=scColor;
+  [{id:'vb1',v:'vv1',val:SC.emaMom,max:25},{id:'vb2',v:'vv2',val:SC.volScore,max:35},{id:'vb3',v:'vv3',val:SC.bbScore,max:20},{id:'vb4',v:'vv4',val:SC.vwapScore,max:20}]
+  .forEach(c=>{document.getElementById(c.id).style.width=(c.val/c.max*100)+'%';document.getElementById(c.v).textContent=c.val;});
+  const verd=SC.total>=70&&lx&&age<=3?'\ud83d\udd25 HIGH-CONFIDENCE ENTRY':SC.total>=70?'Strong \u00b7 await fresh cross':SC.total>=50?'Moderate \u00b7 caution':'Low conviction \u00b7 wait';
+  document.getElementById('vwscVerdict').textContent=verd;
+  document.getElementById('vwscVerdict').style.color=scColor;
+
+  const log=document.getElementById('cxLog');
+  if(!CX.length){log.innerHTML='<div style="color:var(--muted);font-size:8px;padding-top:3px">No crossovers detected.</div>';}
+  else{
+    log.innerHTML=[...CX].reverse().slice(0,6).map(c=>{
+      const ts=timestamps[c.idx];
+      const t=ts?ts.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):`Bar ${c.idx}`;
+      const p=prices[c.idx].toFixed(2);
+      const vr=((volumes[c.idx])/(VMA[c.idx]||volumes[c.idx])).toFixed(1);
+      const col=c.type==='BULLISH'?'var(--bull)':'var(--bear)';
+      return`<div class="log-entry"><span class="log-type" style="color:${col}">${c.type==='BULLISH'?'\u25b2':'\u25bc'} ${c.type}</span><div class="log-info">${t} $${p}<br>${vr}x vol</div></div>`;
+    }).join('');
+  }
+
+  drawMain({prices,E9,E19,BB,VW,CX,volumes,VMA});
+  drawVol({volumes,VMA,CX});
+}
+
+function drawMain({prices,E9,E19,BB,VW,CX,volumes,VMA}){
+  const cv=document.getElementById('mainChart');
+  cv.width=cv.parentElement.clientWidth-20;
+  cv.height=Math.max(100,cv.parentElement.clientHeight-cv.parentElement.querySelector('#volChart').offsetHeight-58);
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const n=prices.length;
+  const all=[...prices,...E9.filter(Boolean),...E19.filter(Boolean),...BB.up.filter(Boolean),...BB.lo.filter(Boolean),...VW.up,...VW.lo];
+  const minV=Math.min(...all)*.998,maxV=Math.max(...all)*1.002;
+  const pd={l:4,r:46,t:8,b:16},cW=W-pd.l-pd.r,cH=H-pd.t-pd.b;
+  const px=i=>pd.l+(i/(n-1))*cW,py=v=>pd.t+cH-((v-minV)/(maxV-minV))*cH;
+
+  ctx.strokeStyle='#1e2035';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pd.t+(i/4)*cH;
+    ctx.beginPath();ctx.moveTo(pd.l,y);ctx.lineTo(W-pd.r,y);ctx.stroke();
+    ctx.fillStyle='#3a3d5c';ctx.font='7px JetBrains Mono';
+    ctx.fillText('$'+(maxV-(i/4)*(maxV-minV)).toFixed(1),W-pd.r+2,y+3);
+  }
+
+  ctx.beginPath();let s=false;
+  for(let i=0;i<n;i++){if(BB.up[i]){if(!s){ctx.moveTo(px(i),py(BB.up[i]));s=true;}else ctx.lineTo(px(i),py(BB.up[i]));}}
+  for(let i=n-1;i>=0;i--){if(BB.lo[i])ctx.lineTo(px(i),py(BB.lo[i]));}
+  ctx.closePath();ctx.fillStyle='rgba(124,106,247,.07)';ctx.fill();
+  ln(ctx,BB.up,n,px,py,'rgba(124,106,247,.5)',1,[4,3]);
+  ln(ctx,BB.lo,n,px,py,'rgba(124,106,247,.5)',1,[4,3]);
+  ln(ctx,BB.mid,n,px,py,'rgba(124,106,247,.2)',1,[2,4]);
+
+  ctx.beginPath();
+  for(let i=0;i<n;i++){i===0?ctx.moveTo(px(i),py(VW.up[i])):ctx.lineTo(px(i),py(VW.up[i]));}
+  for(let i=n-1;i>=0;i--)ctx.lineTo(px(i),py(VW.lo[i]));
+  ctx.closePath();ctx.fillStyle='rgba(255,214,0,.04)';ctx.fill();
+  ln(ctx,VW.up,n,px,py,'rgba(255,214,0,.5)',1,[5,3]);
+  ln(ctx,VW.lo,n,px,py,'rgba(255,214,0,.5)',1,[5,3]);
+  ln(ctx,VW.vs,n,px,py,'rgba(255,214,0,.85)',1.5);
+  ln(ctx,E19,n,px,py,'#ff6b35',1.5);
+  ln(ctx,E9,n,px,py,'#00f5c4',1.5);
+
+  ctx.beginPath();
+  for(let i=0;i<n;i++){const x=px(i),y=py(prices[i]);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.strokeStyle='rgba(232,234,240,.85)';ctx.lineWidth=1.5;ctx.setLineDash([]);ctx.stroke();
+
+  CX.forEach(c=>{
+    const x=px(c.idx),y=py(prices[c.idx]),bull=c.type==='BULLISH';
+    const vr=(volumes[c.idx])/(VMA[c.idx]||volumes[c.idx]);
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle=bull?'rgba(0,230,118,.9)':'rgba(255,23,68,.9)';ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,Math.min(10,5+vr*2),0,Math.PI*2);
+    ctx.strokeStyle=bull?'rgba(0,230,118,.3)':'rgba(255,23,68,.3)';ctx.lineWidth=1;ctx.setLineDash([]);ctx.stroke();
+    ctx.fillStyle=bull?'#00e676':'#ff1744';ctx.font='bold 6px JetBrains Mono';
+    ctx.fillText(bull?'\u25b2':'\u25bc',x-3,bull?y+13:y-7);
+  });
+
+  const ly=py(prices[n-1]);
+  ctx.beginPath();ctx.moveTo(pd.l,ly);ctx.lineTo(W-pd.r,ly);
+  ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.stroke();ctx.setLineDash([]);
+}
+
+function drawVol({volumes,VMA,CX}){
+  const cv=document.getElementById('volChart');
+  cv.width=cv.parentElement.clientWidth-20;cv.height=44;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const n=volumes.length,maxV=Math.max(...volumes);
+  const pd={l:4,r:46,t:3,b:3},cW=W-pd.l-pd.r,cH=H-pd.t-pd.b;
+  const bw=Math.max(1,cW/n-.5);
+  const cxSet=new Set(CX.map(c=>c.idx));
+  volumes.forEach((v,i)=>{
+    const x=pd.l+(i/n)*cW,bh=(v/maxV)*cH,above=VMA[i]&&v>VMA[i]*1.5;
+    ctx.fillStyle=cxSet.has(i)?'rgba(255,214,0,.7)':above?'rgba(0,245,196,.5)':'rgba(92,96,128,.4)';
+    ctx.fillRect(x,pd.t+cH-bh,bw,bh);
+  });
+  ctx.beginPath();let s=false;
+  for(let i=0;i<n;i++){
+    if(!VMA[i]){s=false;continue;}
+    const x=pd.l+(i/n)*cW,y=pd.t+cH-(VMA[i]/maxV)*cH;
+    if(!s){ctx.moveTo(x,y);s=true;}else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle='rgba(255,107,53,.7)';ctx.lineWidth=1;ctx.setLineDash([3,2]);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#3a3d5c';ctx.font='7px JetBrains Mono';ctx.fillText('VOL',W-pd.r+2,H/2+3);
+}
+
+function ln(ctx,data,n,px,py,color,w,dash){
+  ctx.beginPath();let s=false;
+  for(let i=0;i<n;i++){
+    if(data[i]==null){s=false;continue;}
+    if(!s){ctx.moveTo(px(i),py(data[i]));s=true;}else ctx.lineTo(px(i),py(data[i]));
+  }
+  ctx.strokeStyle=color;ctx.lineWidth=w;
+  if(dash)ctx.setLineDash(dash);else ctx.setLineDash([]);
+  ctx.stroke();ctx.setLineDash([]);
+}
+
+window.addEventListener('resize',()=>{if(currentData)renderAll(currentData);});
+document.getElementById('tickerInput').addEventListener('keydown',e=>{if(e.key==='Enter')fetchLive();});
+setTimeout(()=>runDemo('AAPL'),300);
+</script>
+</body>
+</html>
