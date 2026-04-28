@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CROSSFIRE v2 — EMA · BB · VWAP · VWSC</title>
+<title>CROSSFIRE v3 — EMA · BB · VWAP · VWSC · RSI</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Bebas+Neue&display=swap');
   :root {
@@ -12,54 +12,55 @@
     --bull:#00e676;--bear:#ff1744;--warn:#ffd600;
     --text:#e8eaf0;--muted:#5c6080;
     --ema9:#00f5c4;--ema19:#ff6b35;--bb:#7c6af7;--vwap:#ffd600;
+    --rsi:#e040fb;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;}
   .wrap{display:flex;flex-direction:column;height:100vh;}
 
-  .header{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
-  .logo{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:3px;color:var(--accent);}
-  .logo span{color:var(--muted);font-size:9px;font-family:'JetBrains Mono';letter-spacing:1px;margin-left:6px;}
-  .controls{display:flex;align-items:center;gap:6px;}
-  input[type="text"]{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 8px;border-radius:3px;outline:none;}
+  .header{display:flex;align-items:center;justify-content:space-between;padding:5px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;color:var(--accent);}
+  .logo span{color:var(--muted);font-size:8px;font-family:'JetBrains Mono';letter-spacing:1px;margin-left:6px;}
+  .controls{display:flex;align-items:center;gap:5px;}
+  input[type="text"]{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 7px;border-radius:3px;outline:none;}
   input[type="text"]:focus{border-color:var(--accent);}
-  input[type="password"]{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 8px;border-radius:3px;outline:none;width:100%;}
+  input[type="password"]{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 7px;border-radius:3px;outline:none;width:100%;}
   input[type="password"]:focus{border-color:var(--accent);}
-  #tickerInput{width:75px;text-transform:uppercase;}
-  select{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 6px;border-radius:3px;outline:none;}
-  button{background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;padding:4px 10px;border-radius:3px;cursor:pointer;letter-spacing:1px;}
+  #tickerInput{width:70px;text-transform:uppercase;}
+  select{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 5px;border-radius:3px;outline:none;}
+  button{background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;padding:3px 9px;border-radius:3px;cursor:pointer;letter-spacing:1px;}
   button:hover{opacity:.85;}
   button.sec{background:var(--panel);color:var(--text);border:1px solid var(--border);font-weight:400;}
   button.sec:hover{border-color:var(--accent);color:var(--accent);}
 
   .body{display:flex;flex:1;min-height:0;overflow:hidden;}
-
-  .chart-col{display:flex;flex-direction:column;flex:1;min-width:0;padding:8px 10px 6px;gap:4px;overflow:hidden;}
-  .ticker-row{display:flex;align-items:baseline;gap:10px;flex-shrink:0;}
-  .t-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;}
-  .t-price{font-size:16px;font-weight:700;}
-  .t-chg{font-size:10px;color:var(--muted);}
-  .legend{display:flex;gap:10px;font-size:8px;color:var(--muted);flex-shrink:0;}
+  .chart-col{display:flex;flex-direction:column;flex:1;min-width:0;padding:6px 10px 4px;gap:3px;overflow:hidden;}
+  .ticker-row{display:flex;align-items:baseline;gap:8px;flex-shrink:0;}
+  .t-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;}
+  .t-price{font-size:14px;font-weight:700;}
+  .t-chg{font-size:9px;color:var(--muted);}
+  .legend{display:flex;gap:8px;font-size:7px;color:var(--muted);flex-shrink:0;flex-wrap:wrap;}
   .li{display:flex;align-items:center;gap:3px;}
-  .ld{width:14px;height:2px;border-radius:2px;}
+  .ld{width:12px;height:2px;border-radius:2px;}
   canvas{display:block;border-radius:3px;border:1px solid var(--border);background:var(--panel);}
   #mainChart{flex:1;min-height:0;width:100%;}
-  #volChart{height:44px;width:100%;flex-shrink:0;}
+  #rsiChart{height:60px;width:100%;flex-shrink:0;}
+  #volChart{height:38px;width:100%;flex-shrink:0;}
 
-  .sidebar{width:250px;flex-shrink:0;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+  .sidebar{width:248px;flex-shrink:0;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
   .sidebar::-webkit-scrollbar{width:3px;}
   .sidebar::-webkit-scrollbar-thumb{background:var(--border);}
 
-  .api-panel{padding:10px 12px;border-bottom:2px solid var(--accent);background:rgba(0,245,196,.06);flex-shrink:0;}
-  .api-label{font-size:8px;letter-spacing:2px;color:var(--accent);margin-bottom:6px;text-transform:uppercase;font-weight:700;}
-  .api-input-row{display:flex;gap:6px;align-items:center;}
-  .api-save-btn{background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;padding:5px 10px;border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+  .api-panel{padding:8px 11px;border-bottom:2px solid var(--accent);background:rgba(0,245,196,.05);flex-shrink:0;}
+  .api-label{font-size:7px;letter-spacing:2px;color:var(--accent);margin-bottom:5px;text-transform:uppercase;font-weight:700;}
+  .api-input-row{display:flex;gap:5px;align-items:center;}
+  .api-save-btn{background:var(--accent);color:#000;border:none;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:9px;padding:4px 8px;border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
   .api-save-btn:hover{opacity:.85;}
-  .api-status{font-size:8px;margin-top:5px;padding:3px 6px;border-radius:2px;background:rgba(92,96,128,.15);}
+  .api-status{font-size:7px;margin-top:4px;padding:2px 5px;border-radius:2px;background:rgba(92,96,128,.15);}
 
-  .sig-banner{padding:8px 12px;border-bottom:1px solid var(--border);background:var(--panel);}
-  .sig-title{font-size:7px;letter-spacing:2px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;}
-  .sig-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:1px;}
+  .sig-banner{padding:7px 11px;border-bottom:1px solid var(--border);background:var(--panel);}
+  .sig-title{font-size:7px;letter-spacing:2px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;}
+  .sig-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:1px;}
   .sig-badge.bullish{background:rgba(0,230,118,.15);color:var(--bull);border:1px solid rgba(0,230,118,.3);}
   .sig-badge.bearish{background:rgba(255,23,68,.15);color:var(--bear);border:1px solid rgba(255,23,68,.3);}
   .sig-badge.neutral{background:rgba(255,214,0,.1);color:var(--warn);border:1px solid rgba(255,214,0,.25);}
@@ -71,48 +72,57 @@
   .none .sig-dot{background:var(--muted);animation:none;}
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
 
-  .vwsc-block{padding:8px 12px;border-bottom:1px solid var(--border);}
-  .sec-title{font-size:7px;letter-spacing:2px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;}
-  .score-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
-  .score-num{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;}
-  .score-sub{font-size:7px;color:var(--muted);letter-spacing:1px;}
-  .vwsc-bars{display:flex;flex-direction:column;gap:3px;flex:1;}
-  .vb-row{display:flex;align-items:center;gap:4px;font-size:8px;}
-  .vb-label{color:var(--muted);width:68px;flex-shrink:0;}
+  .rsi-block{padding:7px 11px;border-bottom:1px solid var(--border);background:var(--panel);}
+  .rsi-gauge-wrap{display:flex;align-items:center;gap:8px;margin-top:4px;}
+  .rsi-num{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;}
+  .rsi-info{flex:1;}
+  .rsi-bar-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:3px;}
+  .rsi-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
+  .rsi-labels{display:flex;justify-content:space-between;font-size:7px;color:var(--muted);}
+  .rsi-zone{font-size:8px;font-weight:700;margin-top:2px;}
+
+  .vwsc-block{padding:7px 11px;border-bottom:1px solid var(--border);}
+  .sec-title{font-size:7px;letter-spacing:2px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;}
+  .score-row{display:flex;align-items:center;gap:7px;margin-bottom:3px;}
+  .score-num{font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;}
+  .score-sub{font-size:6px;color:var(--muted);letter-spacing:1px;}
+  .vwsc-bars{display:flex;flex-direction:column;gap:2px;flex:1;}
+  .vb-row{display:flex;align-items:center;gap:3px;font-size:7px;}
+  .vb-label{color:var(--muted);width:64px;flex-shrink:0;}
   .vb-track{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
   .vb-fill{height:100%;border-radius:2px;transition:width .4s;}
-  .vb-val{width:20px;text-align:right;font-weight:500;font-size:8px;}
-  .verdict{font-size:8px;margin-top:3px;}
+  .vb-val{width:18px;text-align:right;font-weight:500;font-size:7px;}
+  .verdict{font-size:7px;margin-top:2px;}
 
-  .metrics{padding:6px 12px;border-bottom:1px solid var(--border);}
-  .mr{display:flex;justify-content:space-between;font-size:9px;padding:1px 0;}
+  .metrics{padding:5px 11px;border-bottom:1px solid var(--border);}
+  .mr{display:flex;justify-content:space-between;font-size:8px;padding:1px 0;}
   .ml{color:var(--muted);}
   .mv{font-weight:500;}
   .mv.bull{color:var(--bull);}
   .mv.bear{color:var(--bear);}
   .mv.warn{color:var(--warn);}
+  .mv.rsi{color:var(--rsi);}
 
-  .vwap-room{padding:6px 12px;border-bottom:1px solid var(--border);}
-  .vr-track{background:var(--border);border-radius:2px;height:4px;margin:4px 0 2px;overflow:hidden;}
+  .vwap-room{padding:5px 11px;border-bottom:1px solid var(--border);}
+  .vr-track{background:var(--border);border-radius:2px;height:4px;margin:3px 0 2px;overflow:hidden;}
   .vr-fill{height:100%;border-radius:2px;transition:width .4s;}
   .vr-labels{display:flex;justify-content:space-between;font-size:7px;color:var(--muted);}
 
-  .sh{padding:5px 12px 2px;font-size:7px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
-  .cx-log{padding:0 12px 6px;}
-  .log-entry{padding:4px 0;border-bottom:1px solid var(--border);font-size:8px;display:flex;justify-content:space-between;align-items:center;}
+  .sh{padding:4px 11px 2px;font-size:7px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+  .cx-log{padding:0 11px 5px;}
+  .log-entry{padding:3px 0;border-bottom:1px solid var(--border);font-size:7px;display:flex;justify-content:space-between;align-items:center;}
   .log-entry:last-child{border-bottom:none;}
   .log-type{font-weight:700;}
   .log-info{color:var(--muted);text-align:right;line-height:1.4;}
 
-  .status{padding:4px 12px;background:var(--bg);border-top:1px solid var(--border);font-size:7px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:.5px;flex-shrink:0;}
+  .status{padding:3px 11px;background:var(--bg);border-top:1px solid var(--border);font-size:7px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:.5px;flex-shrink:0;}
   .live-dot{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--bull);animation:pulse 1s infinite;margin-right:3px;vertical-align:middle;}
 </style>
 </head>
 <body>
 <div class="wrap">
-
   <div class="header">
-    <div class="logo">CROSSFIRE <span>EMA · BB · VWAP · VWSC · LIVE</span></div>
+    <div class="logo">CROSSFIRE <span>v3 &#183; EMA &#183; BB &#183; VWAP &#183; VWSC &#183; RSI &#183; LIVE</span></div>
     <div class="controls">
       <input type="text" id="tickerInput" placeholder="TICKER" value="AAPL" maxlength="6"/>
       <select id="intervalSelect">
@@ -129,9 +139,9 @@
   <div class="body">
     <div class="chart-col">
       <div class="ticker-row">
-        <div class="t-name" id="dTicker">—</div>
-        <div class="t-price" id="dPrice">—</div>
-        <div class="t-chg" id="dChg">—</div>
+        <div class="t-name" id="dTicker">&#8212;</div>
+        <div class="t-price" id="dPrice">&#8212;</div>
+        <div class="t-chg" id="dChg">&#8212;</div>
       </div>
       <div class="legend">
         <div class="li"><div class="ld" style="background:#e8eaf0"></div>PRICE</div>
@@ -139,8 +149,11 @@
         <div class="li"><div class="ld" style="background:var(--ema19)"></div>EMA19</div>
         <div class="li"><div class="ld" style="background:var(--bb)"></div>BB</div>
         <div class="li"><div class="ld" style="background:var(--vwap)"></div>VWAP&#177;2&#963;</div>
+        <div class="li"><div class="ld" style="background:var(--rsi)"></div>RSI(14)</div>
+        <div class="li"><div class="ld" style="background:rgba(255,23,68,.5);height:6px;width:6px;border-radius:50%"></div>OB/OS</div>
       </div>
       <canvas id="mainChart"></canvas>
+      <canvas id="rsiChart"></canvas>
       <canvas id="volChart"></canvas>
     </div>
 
@@ -148,77 +161,88 @@
       <div class="api-panel">
         <div class="api-label">&#128273; Alpha Vantage API Key</div>
         <div class="api-input-row">
-          <input type="password" id="apiKeyInput" placeholder="Paste your key here…"/>
+          <input type="password" id="apiKeyInput" placeholder="Paste your key here&hellip;"/>
           <button class="api-save-btn" onclick="saveKey()">SAVE</button>
         </div>
-        <div class="api-status" id="apiStatus" style="color:var(--muted)">No key saved · running demo data</div>
+        <div class="api-status" id="apiStatus" style="color:var(--muted)">No key saved &middot; running demo</div>
       </div>
 
       <div class="sig-banner">
         <div class="sig-title">CROSSOVER SIGNAL</div>
         <div class="sig-badge none" id="sigBadge"><div class="sig-dot"></div><span id="sigText">AWAITING DATA</span></div>
-        <div style="margin-top:4px;font-size:8px;color:var(--muted)" id="sigDetail">Paste key above, enter ticker, hit &#9654; LIVE</div>
+        <div style="margin-top:3px;font-size:7px;color:var(--muted)" id="sigDetail">Paste key above &middot; enter ticker &middot; hit &#9654; LIVE</div>
+      </div>
+
+      <div class="rsi-block">
+        <div class="sec-title">RSI (14) &#8212; MOMENTUM FUEL</div>
+        <div class="rsi-gauge-wrap">
+          <div class="rsi-num" id="rsiNum" style="color:var(--rsi)">&#8212;</div>
+          <div class="rsi-info">
+            <div class="rsi-bar-track"><div class="rsi-bar-fill" id="rsiBarFill" style="width:50%;background:var(--rsi)"></div></div>
+            <div class="rsi-labels"><span>0</span><span>30</span><span>50</span><span>70</span><span>100</span></div>
+            <div class="rsi-zone" id="rsiZone" style="color:var(--muted)">&#8212;</div>
+          </div>
+        </div>
+        <div style="font-size:7px;color:var(--muted);margin-top:3px" id="rsiNote">&#8212;</div>
       </div>
 
       <div class="vwsc-block">
         <div class="sec-title">VOL-WEIGHTED SIGNAL SCORE</div>
         <div class="score-row">
-          <div><div class="score-num" id="vwscNum" style="color:var(--muted)">—</div><div class="score-sub">/100</div></div>
+          <div><div class="score-num" id="vwscNum" style="color:var(--muted)">&#8212;</div><div class="score-sub">/100</div></div>
           <div class="vwsc-bars">
-            <div class="vb-row"><span class="vb-label">EMA Momentum</span><div class="vb-track"><div class="vb-fill" id="vb1" style="width:0%;background:var(--ema9)"></div></div><span class="vb-val" id="vv1" style="color:var(--ema9)">—</span></div>
-            <div class="vb-row"><span class="vb-label">Vol Confirm</span><div class="vb-track"><div class="vb-fill" id="vb2" style="width:0%;background:var(--ema19)"></div></div><span class="vb-val" id="vv2" style="color:var(--ema19)">—</span></div>
-            <div class="vb-row"><span class="vb-label">BB Position</span><div class="vb-track"><div class="vb-fill" id="vb3" style="width:0%;background:var(--bb)"></div></div><span class="vb-val" id="vv3" style="color:var(--bb)">—</span></div>
-            <div class="vb-row"><span class="vb-label">VWAP Room</span><div class="vb-track"><div class="vb-fill" id="vb4" style="width:0%;background:var(--vwap)"></div></div><span class="vb-val" id="vv4" style="color:var(--vwap)">—</span></div>
+            <div class="vb-row"><span class="vb-label">EMA Momentum</span><div class="vb-track"><div class="vb-fill" id="vb1" style="width:0%;background:var(--ema9)"></div></div><span class="vb-val" id="vv1" style="color:var(--ema9)">&#8212;</span></div>
+            <div class="vb-row"><span class="vb-label">Vol Confirm</span><div class="vb-track"><div class="vb-fill" id="vb2" style="width:0%;background:var(--ema19)"></div></div><span class="vb-val" id="vv2" style="color:var(--ema19)">&#8212;</span></div>
+            <div class="vb-row"><span class="vb-label">BB Position</span><div class="vb-track"><div class="vb-fill" id="vb3" style="width:0%;background:var(--bb)"></div></div><span class="vb-val" id="vv3" style="color:var(--bb)">&#8212;</span></div>
+            <div class="vb-row"><span class="vb-label">VWAP Room</span><div class="vb-track"><div class="vb-fill" id="vb4" style="width:0%;background:var(--vwap)"></div></div><span class="vb-val" id="vv4" style="color:var(--vwap)">&#8212;</span></div>
+            <div class="vb-row"><span class="vb-label">RSI Align</span><div class="vb-track"><div class="vb-fill" id="vb5" style="width:0%;background:var(--rsi)"></div></div><span class="vb-val" id="vv5" style="color:var(--rsi)">&#8212;</span></div>
           </div>
         </div>
-        <div class="verdict" id="vwscVerdict" style="color:var(--muted)">Score 70+ with active cross = high-confidence entry</div>
+        <div class="verdict" id="vwscVerdict" style="color:var(--muted)">Score 70+ with active cross = high-confidence</div>
       </div>
 
       <div class="metrics">
-        <div class="mr"><span class="ml">EMA 9</span><span class="mv" id="e9v">—</span></div>
-        <div class="mr"><span class="ml">EMA 19</span><span class="mv" id="e19v">—</span></div>
-        <div class="mr"><span class="ml">Spread</span><span class="mv" id="espread">—</span></div>
-        <div class="mr"><span class="ml">BB Upper</span><span class="mv" id="bbU">—</span></div>
-        <div class="mr"><span class="ml">BB Lower</span><span class="mv" id="bbL">—</span></div>
-        <div class="mr"><span class="ml">VWAP</span><span class="mv" id="vwapV">—</span></div>
-        <div class="mr"><span class="ml">VWAP +2&#963;</span><span class="mv" id="vwapUp">—</span></div>
-        <div class="mr"><span class="ml">VWAP -2&#963;</span><span class="mv" id="vwapDn">—</span></div>
-        <div class="mr"><span class="ml">Vol / MA</span><span class="mv" id="volRatioDisp">—</span></div>
+        <div class="mr"><span class="ml">EMA 9</span><span class="mv" id="e9v">&#8212;</span></div>
+        <div class="mr"><span class="ml">EMA 19</span><span class="mv" id="e19v">&#8212;</span></div>
+        <div class="mr"><span class="ml">Spread</span><span class="mv" id="espread">&#8212;</span></div>
+        <div class="mr"><span class="ml">RSI(14)</span><span class="mv rsi" id="rsiMetric">&#8212;</span></div>
+        <div class="mr"><span class="ml">BB Upper</span><span class="mv" id="bbU">&#8212;</span></div>
+        <div class="mr"><span class="ml">BB Lower</span><span class="mv" id="bbL">&#8212;</span></div>
+        <div class="mr"><span class="ml">VWAP</span><span class="mv" id="vwapV">&#8212;</span></div>
+        <div class="mr"><span class="ml">VWAP +2&#963;</span><span class="mv" id="vwapUp">&#8212;</span></div>
+        <div class="mr"><span class="ml">VWAP -2&#963;</span><span class="mv" id="vwapDn">&#8212;</span></div>
+        <div class="mr"><span class="ml">Vol / MA</span><span class="mv" id="volRatioDisp">&#8212;</span></div>
       </div>
 
       <div class="sh">VWAP BAND POSITION</div>
       <div class="vwap-room">
-        <div class="mr" style="margin-bottom:1px"><span class="ml" style="font-size:8px">Room to &#177;2&#963;</span><span class="mv" id="vwapRoomPct" style="font-size:8px">—</span></div>
+        <div class="mr" style="margin-bottom:1px"><span class="ml" style="font-size:7px">Room to &#177;2&#963;</span><span class="mv" id="vwapRoomPct" style="font-size:7px">&#8212;</span></div>
         <div class="vr-track"><div class="vr-fill" id="vwapBar" style="width:50%;background:var(--accent)"></div></div>
-        <div class="vr-labels"><span>-2&#963;</span><span id="vwapBarLbl">—</span><span>+2&#963;</span></div>
-        <div style="font-size:8px;color:var(--muted);margin-top:3px" id="vwapNote">—</div>
+        <div class="vr-labels"><span>-2&#963;</span><span id="vwapBarLbl">&#8212;</span><span>+2&#963;</span></div>
+        <div style="font-size:7px;color:var(--muted);margin-top:2px" id="vwapNote">&#8212;</div>
       </div>
 
       <div class="sh">CROSSOVER LOG</div>
-      <div class="cx-log" id="cxLog"><div style="color:var(--muted);font-size:8px;padding-top:4px">No data yet.</div></div>
+      <div class="cx-log" id="cxLog"><div style="color:var(--muted);font-size:7px;padding-top:3px">No data yet.</div></div>
 
       <div class="status">
         <span id="statusL">READY</span>
-        <span id="statusR">CROSSFIRE v2 · Watchman Ink</span>
+        <span id="statusR">CROSSFIRE v3 &middot; Watchman Ink</span>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-let apiKey='', liveInterval=null, demoTick=null, currentData=null;
+let apiKey='',liveInterval=null,demoTick=null,currentData=null;
 
 function saveKey(){
   const k=document.getElementById('apiKeyInput').value.trim();
-  if(!k){
-    document.getElementById('apiStatus').textContent='Please paste your key first';
-    document.getElementById('apiStatus').style.color='var(--warn)';
-    return;
-  }
+  if(!k){document.getElementById('apiStatus').textContent='Paste key first';document.getElementById('apiStatus').style.color='var(--warn)';return;}
   apiKey=k;
   document.getElementById('apiKeyInput').value='';
   document.getElementById('apiKeyInput').placeholder='Key saved \u2713';
-  document.getElementById('apiStatus').textContent='\u2713 Key saved \u2014 type ticker & hit \u25BA LIVE';
+  document.getElementById('apiStatus').textContent='\u2713 Key saved \u2014 enter ticker & hit \u25ba LIVE';
   document.getElementById('apiStatus').style.color='var(--bull)';
 }
 
@@ -226,53 +250,49 @@ async function fetchLive(){
   const ticker=document.getElementById('tickerInput').value.trim().toUpperCase();
   if(!ticker)return;
   if(!apiKey){
-    document.getElementById('apiStatus').textContent='\u26a0 Paste your Alpha Vantage key first, then hit SAVE';
+    document.getElementById('apiStatus').textContent='\u26a0 Paste key first';
     document.getElementById('apiStatus').style.color='var(--warn)';
     document.getElementById('apiKeyInput').focus();
-    runDemo(ticker); return;
+    runDemo(ticker);return;
   }
   const interval=document.getElementById('intervalSelect').value;
   document.getElementById('statusL').textContent='FETCHING...';
-  document.getElementById('dPrice').textContent='...';
   clearInterval(demoTick);
   try{
     const url=`https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=${interval}&outputsize=compact&apikey=${apiKey}`;
-    const res=await fetch(url);
-    const json=await res.json();
+    const res=await fetch(url);const json=await res.json();
     const key=`Time Series (${interval})`;
     if(!json[key]){
-      const msg=(json['Note']||json['Information']||json['Error Message']||'API error').slice(0,60);
+      const msg=(json['Note']||json['Information']||json['Error Message']||'API error').slice(0,55);
       document.getElementById('apiStatus').textContent='\u2717 '+msg;
       document.getElementById('apiStatus').style.color='var(--bear)';
-      runDemo(ticker); return;
+      runDemo(ticker);return;
     }
-    const raw=json[key];
-    const times=Object.keys(raw).sort();
+    const raw=json[key],times=Object.keys(raw).sort();
     const prices=times.map(t=>parseFloat(raw[t]['4. close']));
     const volumes=times.map(t=>parseInt(raw[t]['5. volume']));
     const timestamps=times.map(t=>new Date(t));
     currentData={ticker,prices,volumes,timestamps};
     document.getElementById('dTicker').textContent=ticker;
-    document.getElementById('statusL').textContent=`LIVE \u00b7 ${prices.length} BARS \u00b7 ${interval.toUpperCase()}`;
+    document.getElementById('statusL').textContent=`LIVE \u00b7 ${prices.length}B \u00b7 ${interval.toUpperCase()}`;
     document.getElementById('statusR').innerHTML='<span class="live-dot"></span>LIVE';
-    document.getElementById('apiStatus').textContent=`\u2713 ${prices.length} bars loaded \u00b7 ${new Date().toLocaleTimeString()}`;
+    document.getElementById('apiStatus').textContent=`\u2713 ${prices.length} bars \u00b7 ${new Date().toLocaleTimeString()}`;
     document.getElementById('apiStatus').style.color='var(--bull)';
     renderAll(currentData);
-    clearInterval(liveInterval);
-    liveInterval=setInterval(()=>fetchLive(),60000);
+    clearInterval(liveInterval);liveInterval=setInterval(()=>fetchLive(),60000);
   }catch(e){
-    document.getElementById('apiStatus').textContent='\u2717 Network error \u2014 using demo';
+    document.getElementById('apiStatus').textContent='\u2717 Network error \u2014 demo mode';
     document.getElementById('apiStatus').style.color='var(--bear)';
     runDemo(ticker);
   }
 }
 
 function runDemo(ticker){
-  clearInterval(liveInterval); clearInterval(demoTick);
+  clearInterval(liveInterval);clearInterval(demoTick);
   const t=(ticker||document.getElementById('tickerInput').value.trim().toUpperCase()||'DEMO').toUpperCase();
-  const n=80, start=150+Math.random()*80;
+  const n=80,start=150+Math.random()*80;
   const prices=[start];
-  for(let i=1;i<n;i++) prices.push(Math.max(1,prices[i-1]+(Math.random()-.47)*start*.009));
+  for(let i=1;i<n;i++)prices.push(Math.max(1,prices[i-1]+(Math.random()-.47)*start*.009));
   const volumes=Array.from({length:n},(_,i)=>Math.floor(200000+Math.random()*800000+(i%5===0?500000:0)));
   const timestamps=Array.from({length:n},(_,i)=>new Date(Date.now()-(n-i)*15*60000));
   currentData={ticker:t,prices,volumes,timestamps};
@@ -296,6 +316,22 @@ function calcEMA(prices,p){
   for(let i=p;i<prices.length;i++){prev=prices[i]*k+prev*(1-k);out.push(prev);}
   return out;
 }
+
+function calcRSI(prices,p=14){
+  const out=Array(p).fill(null);
+  let gains=0,losses=0;
+  for(let i=1;i<=p;i++){const d=prices[i]-prices[i-1];if(d>0)gains+=d;else losses+=Math.abs(d);}
+  let avgG=gains/p,avgL=losses/p;
+  out.push(avgL===0?100:100-(100/(1+avgG/avgL)));
+  for(let i=p+1;i<prices.length;i++){
+    const d=prices[i]-prices[i-1];
+    const g=d>0?d:0,l=d<0?Math.abs(d):0;
+    avgG=(avgG*(p-1)+g)/p;avgL=(avgL*(p-1)+l)/p;
+    out.push(avgL===0?100:100-(100/(1+avgG/avgL)));
+  }
+  return out;
+}
+
 function calcBB(prices,p=20,m=2){
   const up=[],lo=[],mid=[];
   for(let i=0;i<prices.length;i++){
@@ -306,19 +342,20 @@ function calcBB(prices,p=20,m=2){
   }
   return{up,lo,mid};
 }
+
 function calcVWAP(prices,vols){
-  let cpv=0,cv=0;
-  const vs=[],up=[],lo=[],devs=[];
+  let cpv=0,cv=0;const vs=[],up=[],lo=[],devs=[];
   for(let i=0;i<prices.length;i++){
-    cpv+=prices[i]*vols[i];cv+=vols[i];
-    const v=cpv/cv;vs.push(v);
+    cpv+=prices[i]*vols[i];cv+=vols[i];const v=cpv/cv;vs.push(v);
     devs.push((prices[i]-v)**2);
     const std=Math.sqrt(devs.reduce((a,b)=>a+b,0)/devs.length);
     up.push(v+2*std);lo.push(v-2*std);
   }
   return{vs,up,lo};
 }
+
 function calcVolMA(vols,p=20){return vols.map((_,i)=>i<p-1?null:vols.slice(i-p+1,i+1).reduce((a,b)=>a+b,0)/p);}
+
 function detectCrosses(e9,e19){
   const out=[];
   for(let i=1;i<e9.length;i++){
@@ -329,20 +366,24 @@ function detectCrosses(e9,e19){
   }
   return out;
 }
-function calcVWSC(prices,vols,vma,e9,e19,bb,vw){
+
+function calcVWSC(prices,vols,vma,e9,e19,bb,vw,rsi){
   const n=prices.length-1,last=prices[n];
   const sp=Math.abs((e9[n]||last)-(e19[n]||last))/last*100;
-  const emaMom=Math.min(25,sp/0.5*25);
+  const emaMom=Math.min(20,sp/0.5*20);
   const vRat=(vols[n])/(vma[n]||vols[n]);
-  const volScore=Math.min(35,Math.max(0,(vRat-1)*35));
+  const volScore=Math.min(30,Math.max(0,(vRat-1)*30));
   const bbR=(bb.up[n]||last)-(bb.lo[n]||last);
   const bbPos=bbR>0?(last-(bb.lo[n]||last))/bbR:0.5;
-  const bbScore=(1-Math.abs(bbPos-0.5)*2)*20;
+  const bbScore=(1-Math.abs(bbPos-0.5)*2)*15;
   const vR=vw.up[n]-vw.lo[n];
   const vPos=vR>0?(last-vw.lo[n])/vR:0.5;
-  const vwapScore=(1-Math.abs(vPos-0.5)*2)*20;
-  const total=Math.min(100,Math.max(0,Math.round(emaMom+volScore+bbScore+vwapScore)));
-  return{total,emaMom:Math.round(emaMom),volScore:Math.round(volScore),bbScore:Math.round(bbScore),vwapScore:Math.round(vwapScore),vRat};
+  const vwapScore=(1-Math.abs(vPos-0.5)*2)*15;
+  const rsiNow=rsi[n]||50;
+  const rsiDist=Math.abs(rsiNow-50)/50;
+  const rsiScore=(1-rsiDist)*20;
+  const total=Math.min(100,Math.max(0,Math.round(emaMom+volScore+bbScore+vwapScore+rsiScore)));
+  return{total,emaMom:Math.round(emaMom),volScore:Math.round(volScore),bbScore:Math.round(bbScore),vwapScore:Math.round(vwapScore),rsiScore:Math.round(rsiScore),vRat,rsiNow};
 }
 
 function renderAll(data){
@@ -350,13 +391,34 @@ function renderAll(data){
   const n=prices.length;
   const E9=calcEMA(prices,9),E19=calcEMA(prices,19);
   const BB=calcBB(prices),VW=calcVWAP(prices,volumes),VMA=calcVolMA(volumes);
+  const RSI=calcRSI(prices,14);
   const CX=detectCrosses(E9,E19);
-  const SC=calcVWSC(prices,volumes,VMA,E9,E19,BB,VW);
+  const SC=calcVWSC(prices,volumes,VMA,E9,E19,BB,VW,RSI);
 
   const last=prices[n-1],prev=prices[n-2]||last,chg=last-prev;
   document.getElementById('dPrice').textContent='$'+last.toFixed(2);
   document.getElementById('dPrice').style.color=chg>=0?'var(--bull)':'var(--bear)';
   document.getElementById('dChg').textContent=`${chg>=0?'+':''}${chg.toFixed(2)} (${(chg/prev*100).toFixed(2)}%)`;
+
+  const rsiNow=RSI[n-1]||50;
+  const rsiColor=rsiNow>=70?'var(--bear)':rsiNow<=30?'var(--bull)':'var(--rsi)';
+  document.getElementById('rsiNum').textContent=rsiNow.toFixed(1);
+  document.getElementById('rsiNum').style.color=rsiColor;
+  document.getElementById('rsiBarFill').style.width=rsiNow+'%';
+  document.getElementById('rsiBarFill').style.background=rsiColor;
+  document.getElementById('rsiMetric').textContent=rsiNow.toFixed(1);
+
+  let rsiZone='',rsiNote='';
+  if(rsiNow>=80){rsiZone='EXTREMELY OVERBOUGHT';rsiNote='Avoid new longs \u2014 very high reversal risk';}
+  else if(rsiNow>=70){rsiZone='OVERBOUGHT';rsiNote='Caution on longs \u2014 limited upside fuel remaining';}
+  else if(rsiNow>=60){rsiZone='BULLISH ZONE';rsiNote='Healthy momentum \u2014 room still available';}
+  else if(rsiNow>=40){rsiZone='NEUTRAL ZONE';rsiNote='Best entry zone \u2014 maximum room in both directions';}
+  else if(rsiNow>=30){rsiZone='BEARISH ZONE';rsiNote='Weak momentum \u2014 caution on shorts';}
+  else if(rsiNow>=20){rsiZone='OVERSOLD';rsiNote='Caution on shorts \u2014 bounce potential building';}
+  else{rsiZone='EXTREMELY OVERSOLD';rsiNote='Avoid new shorts \u2014 snap reversal risk is high';}
+  document.getElementById('rsiZone').textContent=rsiZone;
+  document.getElementById('rsiZone').style.color=rsiColor;
+  document.getElementById('rsiNote').textContent=rsiNote;
 
   const e9=E9[n-1]||0,e19=E19[n-1]||0,sp=e9-e19;
   document.getElementById('e9v').textContent='$'+e9.toFixed(2);
@@ -364,8 +426,8 @@ function renderAll(data){
   document.getElementById('e19v').textContent='$'+e19.toFixed(2);
   document.getElementById('espread').textContent=(sp>=0?'+':'')+sp.toFixed(3);
   document.getElementById('espread').className='mv '+(sp>0?'bull':'bear');
-  document.getElementById('bbU').textContent=BB.up[n-1]?'$'+BB.up[n-1].toFixed(2):'—';
-  document.getElementById('bbL').textContent=BB.lo[n-1]?'$'+BB.lo[n-1].toFixed(2):'—';
+  document.getElementById('bbU').textContent=BB.up[n-1]?'$'+BB.up[n-1].toFixed(2):'\u2014';
+  document.getElementById('bbL').textContent=BB.lo[n-1]?'$'+BB.lo[n-1].toFixed(2):'\u2014';
   document.getElementById('vwapV').textContent='$'+VW.vs[n-1].toFixed(2);
   document.getElementById('vwapUp').textContent='$'+VW.up[n-1].toFixed(2);
   document.getElementById('vwapDn').textContent='$'+VW.lo[n-1].toFixed(2);
@@ -389,63 +451,70 @@ function renderAll(data){
     const bull=lx.type==='BULLISH';
     badge.className='sig-badge '+(bull?'bullish':'bearish');
     document.getElementById('sigText').textContent=bull?'\u25b2 BULLISH CROSS':'\u25bc BEARISH CROSS';
-    document.getElementById('sigDetail').textContent=`${age}b ago \u00b7 Score:${SC.total} \u00b7 ${!near?'VWAP \u2713':'TIGHT \u26a0'}`;
-    document.getElementById('sigDetail').style.color=SC.total>=70&&!near?'var(--bull)':SC.total>=50?'var(--warn)':'var(--bear)';
+    const rsiOk=bull?(rsiNow<70):(rsiNow>30);
+    document.getElementById('sigDetail').textContent=`${age}b ago \u00b7 Score:${SC.total} \u00b7 RSI:${rsiNow.toFixed(0)} ${rsiOk?'\u2713':'\u26a0'}`;
+    document.getElementById('sigDetail').style.color=SC.total>=70&&!near&&rsiOk?'var(--bull)':SC.total>=50?'var(--warn)':'var(--bear)';
   }else if(lx){
     badge.className='sig-badge neutral';
     document.getElementById('sigText').textContent='~ CROSS AGED';
-    document.getElementById('sigDetail').textContent=`${age} bars ago \u00b7 Score:${SC.total}`;
+    document.getElementById('sigDetail').textContent=`${age} bars ago \u00b7 Score:${SC.total} \u00b7 RSI:${rsiNow.toFixed(0)}`;
     document.getElementById('sigDetail').style.color='var(--muted)';
   }else{
     badge.className='sig-badge none';
     document.getElementById('sigText').textContent='NO CROSS YET';
-    document.getElementById('sigDetail').textContent='Watching EMA 9/19 for crossover';
+    document.getElementById('sigDetail').textContent=`RSI: ${rsiNow.toFixed(0)} \u00b7 ${rsiZone}`;
     document.getElementById('sigDetail').style.color='var(--muted)';
   }
 
   const scColor=SC.total>=70?'var(--bull)':SC.total>=50?'var(--warn)':'var(--bear)';
   document.getElementById('vwscNum').textContent=SC.total;
   document.getElementById('vwscNum').style.color=scColor;
-  [{id:'vb1',v:'vv1',val:SC.emaMom,max:25},{id:'vb2',v:'vv2',val:SC.volScore,max:35},{id:'vb3',v:'vv3',val:SC.bbScore,max:20},{id:'vb4',v:'vv4',val:SC.vwapScore,max:20}]
+  [{id:'vb1',v:'vv1',val:SC.emaMom,max:20},{id:'vb2',v:'vv2',val:SC.volScore,max:30},
+   {id:'vb3',v:'vv3',val:SC.bbScore,max:15},{id:'vb4',v:'vv4',val:SC.vwapScore,max:15},
+   {id:'vb5',v:'vv5',val:SC.rsiScore,max:20}]
   .forEach(c=>{document.getElementById(c.id).style.width=(c.val/c.max*100)+'%';document.getElementById(c.v).textContent=c.val;});
   const verd=SC.total>=70&&lx&&age<=3?'\ud83d\udd25 HIGH-CONFIDENCE ENTRY':SC.total>=70?'Strong \u00b7 await fresh cross':SC.total>=50?'Moderate \u00b7 caution':'Low conviction \u00b7 wait';
   document.getElementById('vwscVerdict').textContent=verd;
   document.getElementById('vwscVerdict').style.color=scColor;
 
   const log=document.getElementById('cxLog');
-  if(!CX.length){log.innerHTML='<div style="color:var(--muted);font-size:8px;padding-top:3px">No crossovers detected.</div>';}
+  if(!CX.length){log.innerHTML='<div style="color:var(--muted);font-size:7px;padding-top:3px">No crossovers detected.</div>';}
   else{
     log.innerHTML=[...CX].reverse().slice(0,6).map(c=>{
       const ts=timestamps[c.idx];
       const t=ts?ts.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):`Bar ${c.idx}`;
       const p=prices[c.idx].toFixed(2);
       const vr=((volumes[c.idx])/(VMA[c.idx]||volumes[c.idx])).toFixed(1);
+      const rsiAtCross=(RSI[c.idx]||0).toFixed(0);
       const col=c.type==='BULLISH'?'var(--bull)':'var(--bear)';
-      return`<div class="log-entry"><span class="log-type" style="color:${col}">${c.type==='BULLISH'?'\u25b2':'\u25bc'} ${c.type}</span><div class="log-info">${t} $${p}<br>${vr}x vol</div></div>`;
+      return`<div class="log-entry"><span class="log-type" style="color:${col}">${c.type==='BULLISH'?'\u25b2':'\u25bc'} ${c.type}</span><div class="log-info">${t} $${p}<br>${vr}x vol \u00b7 RSI:${rsiAtCross}</div></div>`;
     }).join('');
   }
 
   drawMain({prices,E9,E19,BB,VW,CX,volumes,VMA});
+  drawRSI({RSI,CX,n:prices.length});
   drawVol({volumes,VMA,CX});
 }
 
 function drawMain({prices,E9,E19,BB,VW,CX,volumes,VMA}){
   const cv=document.getElementById('mainChart');
-  cv.width=cv.parentElement.clientWidth-20;
-  cv.height=Math.max(100,cv.parentElement.clientHeight-cv.parentElement.querySelector('#volChart').offsetHeight-58);
+  const col=cv.parentElement;
+  const usedH=col.querySelector('#rsiChart').offsetHeight+col.querySelector('#volChart').offsetHeight+52;
+  cv.width=col.clientWidth-20;
+  cv.height=Math.max(80,col.clientHeight-usedH);
   const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
   const n=prices.length;
   const all=[...prices,...E9.filter(Boolean),...E19.filter(Boolean),...BB.up.filter(Boolean),...BB.lo.filter(Boolean),...VW.up,...VW.lo];
   const minV=Math.min(...all)*.998,maxV=Math.max(...all)*1.002;
-  const pd={l:4,r:46,t:8,b:16},cW=W-pd.l-pd.r,cH=H-pd.t-pd.b;
+  const pd={l:4,r:44,t:6,b:14},cW=W-pd.l-pd.r,cH=H-pd.t-pd.b;
   const px=i=>pd.l+(i/(n-1))*cW,py=v=>pd.t+cH-((v-minV)/(maxV-minV))*cH;
 
   ctx.strokeStyle='#1e2035';ctx.lineWidth=1;
   for(let i=0;i<=4;i++){
     const y=pd.t+(i/4)*cH;
     ctx.beginPath();ctx.moveTo(pd.l,y);ctx.lineTo(W-pd.r,y);ctx.stroke();
-    ctx.fillStyle='#3a3d5c';ctx.font='7px JetBrains Mono';
+    ctx.fillStyle='#3a3d5c';ctx.font='6px JetBrains Mono';
     ctx.fillText('$'+(maxV-(i/4)*(maxV-minV)).toFixed(1),W-pd.r+2,y+3);
   }
 
@@ -476,10 +545,10 @@ function drawMain({prices,E9,E19,BB,VW,CX,volumes,VMA}){
     const vr=(volumes[c.idx])/(VMA[c.idx]||volumes[c.idx]);
     ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);
     ctx.fillStyle=bull?'rgba(0,230,118,.9)':'rgba(255,23,68,.9)';ctx.fill();
-    ctx.beginPath();ctx.arc(x,y,Math.min(10,5+vr*2),0,Math.PI*2);
+    ctx.beginPath();ctx.arc(x,y,Math.min(9,4+vr*2),0,Math.PI*2);
     ctx.strokeStyle=bull?'rgba(0,230,118,.3)':'rgba(255,23,68,.3)';ctx.lineWidth=1;ctx.setLineDash([]);ctx.stroke();
     ctx.fillStyle=bull?'#00e676':'#ff1744';ctx.font='bold 6px JetBrains Mono';
-    ctx.fillText(bull?'\u25b2':'\u25bc',x-3,bull?y+13:y-7);
+    ctx.fillText(bull?'\u25b2':'\u25bc',x-3,bull?y+11:y-6);
   });
 
   const ly=py(prices[n-1]);
@@ -487,13 +556,61 @@ function drawMain({prices,E9,E19,BB,VW,CX,volumes,VMA}){
   ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.stroke();ctx.setLineDash([]);
 }
 
+function drawRSI({RSI,CX,n}){
+  const cv=document.getElementById('rsiChart');
+  cv.width=cv.parentElement.clientWidth-20;cv.height=60;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const pd={l:4,r:44,t:4,b:4},cW=W-pd.l-pd.r,cH=H-pd.t-pd.b;
+  const px=i=>pd.l+(i/(n-1))*cW;
+  const py=v=>pd.t+cH-(v/100)*cH;
+
+  ctx.fillStyle='rgba(255,23,68,.08)';ctx.fillRect(pd.l,pd.t,cW,cH*(1-70/100));
+  ctx.fillStyle='rgba(0,230,118,.08)';ctx.fillRect(pd.l,pd.t+cH*(1-30/100),cW,cH*(30/100));
+
+  [70,50,30].forEach(level=>{
+    const y=py(level);
+    ctx.beginPath();ctx.moveTo(pd.l,y);ctx.lineTo(W-pd.r,y);
+    ctx.strokeStyle=level===50?'rgba(92,96,128,.4)':'rgba(255,23,68,.3)';
+    ctx.lineWidth=0.5;ctx.setLineDash(level===50?[3,3]:[2,2]);ctx.stroke();
+    ctx.fillStyle='#3a3d5c';ctx.font='6px JetBrains Mono';ctx.setLineDash([]);
+    ctx.fillText(level,W-pd.r+2,y+2);
+  });
+
+  ctx.fillStyle='rgba(224,64,251,.5)';ctx.font='6px JetBrains Mono';
+  ctx.fillText('RSI',W-pd.r+2,pd.t+8);
+
+  ctx.beginPath();let started=false;
+  for(let i=0;i<n;i++){
+    if(RSI[i]===null){started=false;continue;}
+    if(!started){ctx.moveTo(px(i),py(RSI[i]));started=true;}
+    else ctx.lineTo(px(i),py(RSI[i]));
+  }
+  ctx.strokeStyle='rgba(224,64,251,.85)';ctx.lineWidth=1.5;ctx.setLineDash([]);ctx.stroke();
+
+  CX.forEach(c=>{
+    if(RSI[c.idx]===null)return;
+    const x=px(c.idx),y=py(RSI[c.idx]),bull=c.type==='BULLISH';
+    const extreme=(bull&&RSI[c.idx]>70)||((!bull)&&RSI[c.idx]<30);
+    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);
+    ctx.fillStyle=extreme?'rgba(255,214,0,.9)':'rgba(224,64,251,.7)';ctx.fill();
+  });
+
+  const lastRSI=RSI[n-1];
+  if(lastRSI!==null){
+    const ly=py(lastRSI);
+    ctx.beginPath();ctx.moveTo(pd.l,ly);ctx.lineTo(W-pd.r,ly);
+    ctx.strokeStyle='rgba(224,64,251,.2)';ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.stroke();ctx.setLineDash([]);
+  }
+}
+
 function drawVol({volumes,VMA,CX}){
   const cv=document.getElementById('volChart');
-  cv.width=cv.parentElement.clientWidth-20;cv.height=44;
+  cv.width=cv.parentElement.clientWidth-20;cv.height=38;
   const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
   const n=volumes.length,maxV=Math.max(...volumes);
-  const pd={l:4,r:46,t:3,b:3},cW=W-pd.l-pd.r,cH=H-pd.t-pd.b;
+  const pd={l:4,r:44,t:2,b:2},cW=W-pd.l-pd.r,cH=H-pd.t-pd.b;
   const bw=Math.max(1,cW/n-.5);
   const cxSet=new Set(CX.map(c=>c.idx));
   volumes.forEach((v,i)=>{
@@ -508,7 +625,7 @@ function drawVol({volumes,VMA,CX}){
     if(!s){ctx.moveTo(x,y);s=true;}else ctx.lineTo(x,y);
   }
   ctx.strokeStyle='rgba(255,107,53,.7)';ctx.lineWidth=1;ctx.setLineDash([3,2]);ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='#3a3d5c';ctx.font='7px JetBrains Mono';ctx.fillText('VOL',W-pd.r+2,H/2+3);
+  ctx.fillStyle='#3a3d5c';ctx.font='6px JetBrains Mono';ctx.fillText('VOL',W-pd.r+2,H/2+3);
 }
 
 function ln(ctx,data,n,px,py,color,w,dash){
